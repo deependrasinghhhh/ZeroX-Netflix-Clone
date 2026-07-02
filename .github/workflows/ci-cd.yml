@@ -1,0 +1,67 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    name: Lint, Build, and Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: zerox_admin
+          POSTGRES_PASSWORD: zerox_password
+          POSTGRES_DB: zerox_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Monorepo Dependencies
+        run: npm ci
+
+      - name: Build Shared Workspaces Package
+        run: npm run build -w packages/shared
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+
+      - name: Validate Code Linting
+        run: |
+          npm run lint -w apps/web --if-present
+          npm run lint -w apps/api --if-present
+
+      - name: Run Backend Integration & Unit Tests
+        env:
+          DATABASE_URL: "postgresql://zerox_admin:zerox_password@localhost:5432/zerox_db?schema=public"
+          JWT_SECRET: "ci_jwt_secret_key"
+        run: npm run test -w apps/api
