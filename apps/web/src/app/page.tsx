@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useProfileStore } from "../features/profiles/store";
 import { moviesApi, MovieResponse, ReviewResponse, MovieDetailsResponse } from "../features/movies/api";
+import { authApi } from "../features/auth/api";
 import { ApiError } from "../services/api-client";
 import Link from "next/link";
 
@@ -129,10 +130,12 @@ export default function Home() {
     }
   };
 
-  const handleLogout = () => {
-    // Clear cookies/local states
-    document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    document.cookie = "refreshToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+  const handleLogout = async () => {
+    try {
+      await authApi.logout();
+    } catch {
+      // ignore - clear local state regardless
+    }
     clearActiveProfile();
     router.push("/login");
   };

@@ -5,9 +5,11 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterInputSchema, RegisterInput } from "@zerox/shared";
 import { authApi } from "../../features/auth/api";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -31,6 +33,10 @@ export default function RegisterPage() {
     try {
       const response = await authApi.register(data);
       setSuccessMessage(response.message || "Account created! Please check your email to verify.");
+      // Auto-redirect to login after 3 seconds
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong during registration";
       setError(message);
@@ -40,32 +46,36 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-black bg-opacity-90 px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-black px-4">
       {/* Background decoration */}
-      <div className="absolute inset-0 z-0 overflow-hidden bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-950 via-zinc-950 to-black opacity-60" />
+      <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-red-950/40 via-zinc-950 to-black" />
 
-      <div className="relative z-10 w-full max-w-md p-8 bg-zinc-900 bg-opacity-70 backdrop-blur-md rounded-2xl border border-zinc-800 shadow-2xl">
+      <div className="relative z-10 w-full max-w-md p-8 bg-zinc-900/80 backdrop-blur-md rounded-2xl border border-zinc-800 shadow-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-red-600">ZERO<span className="text-white">X</span></h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            <span className="text-red-600">ZERO</span>
+            <span className="text-white">X</span>
+          </h1>
           <p className="text-sm text-zinc-400 mt-2">Create an account to start watching</p>
         </div>
 
         {error && (
-          <div className="p-3 mb-6 bg-red-900 bg-opacity-40 border border-red-500 rounded-lg text-red-200 text-sm text-center">
+          <div className="p-3 mb-6 bg-red-900/40 border border-red-500 rounded-lg text-red-200 text-sm text-center">
             {error}
           </div>
         )}
 
         {successMessage ? (
-          <div className="text-center py-6">
-            <div className="text-emerald-500 text-5xl mb-4">✉</div>
-            <h2 className="text-xl font-bold text-white mb-2">Check your inbox</h2>
-            <p className="text-zinc-400 text-sm mb-6">{successMessage}</p>
+          <div className="text-center py-6 space-y-4">
+            <div className="text-emerald-500 text-5xl">✉</div>
+            <h2 className="text-xl font-bold text-white">Check your inbox</h2>
+            <p className="text-zinc-400 text-sm">{successMessage}</p>
+            <p className="text-zinc-500 text-xs">Redirecting to login in 3 seconds...</p>
             <Link
               href="/login"
               className="inline-block px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium text-sm"
             >
-              Sign In Page
+              Sign In Now
             </Link>
           </div>
         ) : (
@@ -75,9 +85,11 @@ export default function RegisterPage() {
                 Email Address
               </label>
               <input
+                id="register-email"
                 type="email"
                 {...register("email")}
                 placeholder="you@example.com"
+                autoComplete="email"
                 className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               />
               {errors.email && (
@@ -90,9 +102,11 @@ export default function RegisterPage() {
                 Password
               </label>
               <input
+                id="register-password"
                 type="password"
                 {...register("password")}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               />
               {errors.password && (
@@ -105,9 +119,11 @@ export default function RegisterPage() {
                 Confirm Password
               </label>
               <input
+                id="register-confirm-password"
                 type="password"
                 {...register("confirmPassword")}
                 placeholder="••••••••"
+                autoComplete="new-password"
                 className="w-full px-4 py-3 bg-zinc-950 border border-zinc-800 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               />
               {errors.confirmPassword && (
@@ -116,6 +132,7 @@ export default function RegisterPage() {
             </div>
 
             <button
+              id="register-submit"
               type="submit"
               disabled={isLoading}
               className="w-full py-3 px-4 bg-red-600 hover:bg-red-700 disabled:bg-red-800 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-colors shadow-lg"
